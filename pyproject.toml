@@ -1,0 +1,29 @@
+[project]
+name = "lerpz-invoice"
+version = "0.1.0"
+requires-python = "==3.13.*"
+classifiers = ["Programming Language :: Rust", "Programming Language :: Python"]
+dependencies = [
+    "polars==1.21.*",
+    "pydantic==2.10.*",
+]
+
+[dependency-groups]
+test = ["pytest"]
+lint = ["ruff"]
+
+[tool.maturin]
+bindings = "pyo3"
+python-source = "python"
+module-name = "lerpz_invoice"
+
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "**/**.rs"}
+]
