@@ -2,7 +2,7 @@ from random import randint
 from lerpz_invoice import BuildType
 from lerpz_invoice.product import ProductBuilder
 import polars as pl
-from lerpz_invoice.invoice import InvoiceData, InvoiceData, SourceList, invoice
+from lerpz_invoice.invoice import InvoiceData, SourceList, invoice
 from lerpz_invoice.transform import collect, transform
 
 
@@ -24,7 +24,7 @@ def load_data(sources: SourceList) -> InvoiceData:
 
 @invoice("lerpz_cost")
 def create_invoice(sources: SourceList = ["items", "mapping/cost", "mapping/quantity"]):
-    data = load_data(sources) 
+    data = load_data(sources)
     product_builder = (ProductBuilder(data)
         .invoice(lambda t :
             t.add_rule(calculate_cost)
@@ -42,7 +42,7 @@ def create_invoice(sources: SourceList = ["items", "mapping/cost", "mapping/quan
              .finish(collect_invoice)
         )
     )
-    
+
     invoice = product_builder.build(BuildType.INVOICE)
     correction = product_builder.build(BuildType.CORRECTION)
     visualize = product_builder.build(BuildType.VISUALIZE)

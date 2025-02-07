@@ -1,5 +1,5 @@
 [package]
-name = "lerpz_invoice"
+name = "lerpz_data"
 version = "0.1.0"
 edition = "2021"
 authors = ["Kasper Jønsson"]
@@ -9,4 +9,5 @@ repository = "https://github.com/kanerix/rust-python-project-template"
 crate-type = ["cdylib"]
 
 [dependencies]
+polars = "0.46"
 pyo3 = { version = "0.23", features = ["extension-module"] }

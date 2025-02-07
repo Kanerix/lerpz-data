@@ -1,16 +1,32 @@
-use pyo3::{pyclass, pymethods};
+use pyo3::{pyclass, pymethods, types::PyFunction, Py, PyAny, PyRef, PyRefMut, PyResult};
 
 #[pyclass]
-pub struct TransformPipeline;
+pub struct TransformBuilder {
+    data: Py<PyAny>,
+    rules: Vec<Py<PyFunction>>,
+}
+
+pub struct Transform {
+    pub data: Py<PyAny>,
+    pub rules: Vec<Py<PyFunction>>,
+}
 
 #[pymethods]
-impl TransformPipeline {
+impl TransformBuilder {
     #[new]
-    fn new() -> Self {
-        TransformPipeline {}
+    pub fn new(data: Py<PyAny>) -> PyResult<Self> {
+        Ok(Self {
+            data,
+            rules: Vec::new(),
+        })
     }
 
-    fn transform(&self, input: Vec<f64>) -> Vec<f64> {
-        input.iter().map(|x| x * 2.0).collect()
+    pub fn add_rule<'a>(mut slf: PyRefMut<'a, Self>, f: Py<PyFunction>) -> PyResult<PyRefMut<'a, Self>> {
+        slf.rules.push(f);
+        Ok(slf)
+    }
+
+    pub fn build<'a>(slf: PyRef<'a, Self>) -> PyResult<()> {
+        Ok(())
     }
 }

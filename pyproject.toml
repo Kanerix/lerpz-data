@@ -1,5 +1,5 @@
 [project]
-name = "lerpz-invoice"
+name = "lerpz-data"
 version = "0.1.0"
 requires-python = "==3.13.*"
 classifiers = ["Programming Language :: Rust", "Programming Language :: Python"]
@@ -15,7 +15,7 @@ lint = ["ruff"]
 [tool.maturin]
 bindings = "pyo3"
 python-source = "python"
-module-name = "lerpz_invoice"
+module-name = "rust"
 
 [build-system]
 requires = ["maturin>=1.8,<2.0"]

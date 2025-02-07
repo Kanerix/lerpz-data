@@ -2,7 +2,6 @@ from functools import wraps
 from typing import Callable, Protocol
 
 import polars as pl
-from pydantic import BaseModel
 
 SourceList = list[str]
 
