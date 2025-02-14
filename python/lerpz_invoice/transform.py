@@ -8,6 +8,32 @@ import polars as pl
 from lerpz_invoice.invoice import InvoiceData
 
 
+class Transform:
+    data: InvoiceData
+    rules: list[TransformCallable]
+    collector: CollectCallable
+
+    def __init__(
+        self,
+        data: InvoiceData,
+        rules: list[TransformCallable],
+        collector: CollectCallable,
+    ):
+        self.data = data
+        self.rules = rules
+        self.collector = collector
+
+    @staticmethod
+    def builder(data: InvoiceData) -> TransformBuilder:
+        return TransformBuilder(data)
+
+    def transform(self) -> pl.DataFrame:
+        for rule in self.rules:
+            self.data = rule(self.data)
+        df = self.collector(self.data)
+        return df
+
+
 class TransformBuilder:
     data: InvoiceData
     rules: list[TransformCallable]
@@ -28,23 +54,6 @@ class TransformBuilder:
         return Transform(self.data, self.rules, func)
 
 
-class Transform:
-    data: InvoiceData
-    rules: list[TransformCallable]
-    collector: CollectCallable
-
-    def __init__(self, data: InvoiceData, rules: list[TransformCallable], collector: CollectCallable):
-        self.data = data
-        self.rules = rules
-        self.collector = collector
-
-    def transform(self) -> pl.DataFrame:
-        for rule in self.rules:
-            self.data = rule(self.data)
-        df = self.collector(self.data)
-        return df
-
-
 class TransformCallable(Protocol):
     def __call__(self, data: InvoiceData) -> InvoiceData: ...
 
@@ -56,7 +65,7 @@ class TransformFunction:
 
     def __call__(self, *args, **kwargs):
         return self._func(*args, **kwargs)
-    
+
 
 class CollectCallable(Protocol):
     def __call__(self, data: InvoiceData) -> pl.DataFrame: ...
@@ -85,13 +94,12 @@ def transform() -> Callable[[TransformCallable], TransformFunction]:
             initial_keys = str(initial.keys())
             processed = func(*args, **kwargs)
 
-            print(f"{initial_keys} --> {str(processed.keys())}")
             processed.collect()
 
             return processed
 
         return TransformFunction(wrapper)
-    
+
     return decorator
 
 
@@ -105,7 +113,7 @@ def collect() -> Callable[[CollectCallable], CollectFunction]:
             initial: InvoiceData = args[0]
             if not isinstance(initial, InvoiceData):
                 raise ValueError("The first argument must be an InvoiceData object.")
-            
+
             initial_keys = str(initial.keys())
             processed = func(*args, **kwargs)
 

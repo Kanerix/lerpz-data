@@ -15,7 +15,7 @@ lint = ["ruff"]
 [tool.maturin]
 bindings = "pyo3"
 python-source = "python"
-module-name = "rust"
+module-name = "lerpz_invoice.rust"
 
 [build-system]
 requires = ["maturin>=1.8,<2.0"]

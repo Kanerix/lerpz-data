@@ -1,9 +1,15 @@
 from random import randint
-from lerpz_invoice import BuildType
-from lerpz_invoice.product import ProductBuilder
+
 import polars as pl
-from lerpz_invoice.invoice import InvoiceData, SourceList, invoice
-from lerpz_invoice.transform import collect, transform
+from lerpz_invoice import (
+    BuildType,
+    InvoiceData,
+    ProductBuilder,
+    SourceList,
+    collect,
+    invoice,
+    transform,
+)
 
 
 def load_data(sources: SourceList) -> InvoiceData:
@@ -56,7 +62,7 @@ def calculate_cost(data: InvoiceData) -> InvoiceData:
     data["items"] = data["items"].join(data["mapping/cost"], on="item")
     del data["mapping/cost"]
 
-    rate = 1.0 # Just a fake currecy rate
+    rate = 2.0 # Just a fake currecy rate
     data["items"] = data["items"].with_columns(
         price=(pl.col("price")  * rate)
     )
