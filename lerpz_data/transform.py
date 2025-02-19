@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-from functools import wraps
-from typing import Callable, Protocol
-
 import polars as pl
 
-from lerpz_invoice.invoice import InvoiceData
+from functools import wraps
+from typing import Protocol, Callable
 
 
 class Transform:
-    data: InvoiceData
+    data: TransformData
     rules: list[TransformCallable]
     collector: CollectCallable
 
     def __init__(
         self,
-        data: InvoiceData,
+        data: TransformData,
         rules: list[TransformCallable],
         collector: CollectCallable,
     ):
@@ -24,10 +22,10 @@ class Transform:
         self.collector = collector
 
     @staticmethod
-    def builder(data: InvoiceData) -> TransformBuilder:
+    def builder(data: TransformData) -> TransformBuilder:
         return TransformBuilder(data)
 
-    def transform(self) -> pl.DataFrame:
+    def collect(self) -> pl.DataFrame:
         for rule in self.rules:
             self.data = rule(self.data)
         df = self.collector(self.data)
@@ -35,10 +33,10 @@ class Transform:
 
 
 class TransformBuilder:
-    data: InvoiceData
+    data: TransformData
     rules: list[TransformCallable]
 
-    def __init__(self, data: InvoiceData):
+    def __init__(self, data: TransformData):
         self.data = data
         self.rules = []
 
@@ -54,8 +52,14 @@ class TransformBuilder:
         return Transform(self.data, self.rules, func)
 
 
+class TransformData(dict[str, pl.LazyFrame]):
+    def collect(self) -> None:
+        for key in self.keys():
+            self[key] = self[key].collect().lazy()
+
+
 class TransformCallable(Protocol):
-    def __call__(self, data: InvoiceData) -> InvoiceData: ...
+    def __call__(self, data: TransformData) -> TransformData: ...
 
 
 class TransformFunction:
@@ -67,8 +71,26 @@ class TransformFunction:
         return self._func(*args, **kwargs)
 
 
+def transform() -> Callable[[TransformCallable], TransformFunction]:
+    def decorator(func: TransformCallable) -> TransformFunction:
+        if not callable(func):
+            raise ValueError("The decorator must be called with a callable.")
+
+        @wraps(func)
+        def wrapper(data: TransformData):
+            if not isinstance(data, TransformData):
+                raise ValueError("The first argument must be an InvoiceData object.")
+            processed = func(data)
+            processed.collect()
+            return processed
+
+        return TransformFunction(wrapper)
+
+    return decorator
+
+
 class CollectCallable(Protocol):
-    def __call__(self, data: InvoiceData) -> pl.DataFrame: ...
+    def __call__(self, data: TransformData) -> pl.DataFrame: ...
 
 
 class CollectFunction:
@@ -80,46 +102,16 @@ class CollectFunction:
         return self._func(*args, **kwargs)
 
 
-def transform() -> Callable[[TransformCallable], TransformFunction]:
-    def decorator(func: TransformCallable) -> TransformFunction:
-        if not callable(func):
-            raise ValueError("The decorator must be called with a callable.")
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            initial: InvoiceData = args[0]
-            if not isinstance(initial, InvoiceData):
-                raise ValueError("The first argument must be an InvoiceData object.")
-
-            initial_keys = str(initial.keys())
-            processed = func(*args, **kwargs)
-
-            processed.collect()
-
-            return processed
-
-        return TransformFunction(wrapper)
-
-    return decorator
-
-
 def collect() -> Callable[[CollectCallable], CollectFunction]:
     def decorator(func: CollectCallable) -> CollectFunction:
         if not callable(func):
             raise ValueError("The decorator must be called with a callable.")
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            initial: InvoiceData = args[0]
-            if not isinstance(initial, InvoiceData):
+        def wrapper(data: TransformData):
+            if not isinstance(data, TransformData):
                 raise ValueError("The first argument must be an InvoiceData object.")
-
-            initial_keys = str(initial.keys())
-            processed = func(*args, **kwargs)
-
-            print(f"{initial_keys} collected into schema {str(processed.columns)}")
-
-            return processed
+            return func(data)
 
         return CollectFunction(wrapper)
 

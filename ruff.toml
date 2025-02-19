@@ -1,6 +1,11 @@
+line-length = 100
+indent-width = 4
+
 [lint]
 select = ["PL", "UP"]
 
 [lint.pydocstyle]
 convention = "google"
 
+[format]
+indent-style = "space"

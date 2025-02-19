@@ -46,3 +46,7 @@ pip-selfcheck.json
 
 # MacOS
 .DS_Store
+
+# Dagster Cloud
+.dagster-cloud/
+tmp*
