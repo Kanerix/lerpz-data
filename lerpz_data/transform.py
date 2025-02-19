@@ -70,7 +70,6 @@ class TransformFunction:
     def __call__(self, *args, **kwargs):
         return self._func(*args, **kwargs)
 
-
 def transform() -> Callable[[TransformCallable], TransformFunction]:
     def decorator(func: TransformCallable) -> TransformFunction:
         if not callable(func):
@@ -87,7 +86,6 @@ def transform() -> Callable[[TransformCallable], TransformFunction]:
         return TransformFunction(wrapper)
 
     return decorator
-
 
 class CollectCallable(Protocol):
     def __call__(self, data: TransformData) -> pl.DataFrame: ...

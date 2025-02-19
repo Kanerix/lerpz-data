@@ -2,10 +2,10 @@ from random import randint
 
 import dagster as dg
 import polars as pl
+from pydantic.type_adapter import R
 
 from lerpz_data.invoice import (
     Invoice,
-    invoice,
     SourceList,
 )
 from lerpz_data.transform import (
@@ -16,7 +16,10 @@ from lerpz_data.transform import (
 )
 
 
-def load_data(sources: SourceList) -> TransformData:
+@dg.asset(compute_kind="python")
+def mock_data() -> TransformData:
+    sources: SourceList = ["items", "mapping/cost", "mapping/quantity"]
+
     return TransformData(
         {
             sources[0]: pl.LazyFrame(
@@ -40,13 +43,10 @@ def load_data(sources: SourceList) -> TransformData:
     )
 
 
-@dg.asset
-@invoice("lerpz_cost")
-def create_invoice(sources: SourceList = ["items", "mapping/cost", "mapping/quantity"]) -> Invoice:
-    data = load_data(sources)
-
-    return Invoice.from_transform(
-        Transform.builder(data)
+@dg.asset(compute_kind="python")
+def create_invoice(mock_data: TransformData) -> pl.DataFrame:
+    invoice = Invoice.from_transform(
+        Transform.builder(mock_data)
         .add_rule(calculate_cost)
         .add_rule(join_quanitty)
         .finish(collect_invoice)
@@ -78,4 +78,17 @@ def collect_invoice(data: TransformData) -> pl.DataFrame:
     return data["items"].collect()
 
 
-defs = dg.Definitions(assets=[create_invoice])
+daily_refresh_job = dg.define_asset_job(
+    "daily_refresh", selection=["create_invoice"]
+)
+
+daily_schedule = dg.ScheduleDefinition(
+    job=daily_refresh_job,
+    cron_schedule="0 0 * * *",
+)
+
+defs = dg.Definitions(
+    assets=[create_invoice, mock_data],
+    jobs=[daily_refresh_job],
+    schedules=[daily_schedule]
+)
