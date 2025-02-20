@@ -3,7 +3,7 @@ from __future__ import annotations
 import polars as pl
 
 from functools import wraps
-from typing import Protocol, Callable
+from typing import Protocol
 
 
 class Transform:
@@ -28,6 +28,7 @@ class Transform:
     def collect(self) -> pl.DataFrame:
         for rule in self.rules:
             self.data = rule(self.data)
+            self.data.collect()
         df = self.collector(self.data)
         return df
 
@@ -45,8 +46,6 @@ class TransformBuilder:
         return self
 
     def finish(self, func: CollectCallable) -> Transform:
-        if not getattr(func, "_is_collect_function"):
-            raise ValueError("The rule must be decorated with @collect.")
         return Transform(self.data, self.rules, func)
 
 
