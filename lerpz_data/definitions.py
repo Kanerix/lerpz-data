@@ -9,9 +9,7 @@ from lerpz_data.invoice import (
     SourceList,
 )
 from lerpz_data.transform import (
-    collect,
     Transform,
-    transform,
     TransformData,
 )
 
@@ -20,27 +18,19 @@ from lerpz_data.transform import (
 def mock_data() -> TransformData:
     sources: SourceList = ["items", "mapping/cost", "mapping/quantity"]
 
-    return TransformData(
-        {
-            sources[0]: pl.LazyFrame(
-                {
-                    "item": ["item1", "item2", "item3", "item4"],
-                }
-            ),
-            sources[1]: pl.LazyFrame(
-                {
-                    "item": ["item1", "item2", "item3", "item4"],
-                    "price": [randint(1, 100) for _ in range(4)],
-                }
-            ),
-            sources[2]: pl.LazyFrame(
-                {
-                    "item": ["item1", "item2", "item3", "item4"],
-                    "quantity": [randint(1, 10) for _ in range(4)],
-                }
-            ),
-        }
-    )
+    return TransformData({
+        sources[0]: pl.LazyFrame({
+            "item": ["item1", "item2", "item3", "item4"],
+        }),
+        sources[1]: pl.LazyFrame({
+            "item": ["item1", "item2", "item3", "item4"],
+            "price": [randint(1, 100) for _ in range(4)],
+        }),
+        sources[2]: pl.LazyFrame({
+            "item": ["item1", "item2", "item3", "item4"],
+            "quantity": [randint(1, 10) for _ in range(4)],
+        }),
+    })
 
 
 @dg.asset(compute_kind="python")
@@ -55,9 +45,12 @@ def create_invoice(mock_data: TransformData) -> pl.DataFrame:
     return invoice.data()
 
 
-@transform()
 def calculate_cost(data: TransformData) -> TransformData:
-    """Calculate the cost of the invoice."""
+    """Calculate the cost of the invoice.
+
+    Returns:
+        Data with items joined with cost.
+    """
     data["items"] = data["items"].join(data["mapping/cost"], on="item")
     del data["mapping/cost"]
 
@@ -66,23 +59,27 @@ def calculate_cost(data: TransformData) -> TransformData:
     return data
 
 
-@transform()
 def join_quanitty(data: TransformData) -> TransformData:
-    """Join the quantity data with the cost data."""
+    """Join the quantity data with the cost data.
+
+    Returns:
+        Data with items joined with quanity.
+    """
     data["items"] = data["items"].join(data["mapping/quantity"], on="item")
     del data["mapping/quantity"]
     return data
 
 
-@collect()
 def collect_invoice(data: TransformData) -> pl.DataFrame:
-    """Collect the invoice data."""
+    """Collect the invoice data.
+
+    Returns:
+        The invoice dataframe.
+    """
     return data["items"].collect()
 
 
-daily_refresh_job = dg.define_asset_job(
-    "daily_refresh", selection=["create_invoice"]
-)
+daily_refresh_job = dg.define_asset_job("daily_refresh", selection=["create_invoice"])
 
 daily_schedule = dg.ScheduleDefinition(
     job=daily_refresh_job,
@@ -90,7 +87,5 @@ daily_schedule = dg.ScheduleDefinition(
 )
 
 defs = dg.Definitions(
-    assets=[create_invoice, mock_data],
-    jobs=[daily_refresh_job],
-    schedules=[daily_schedule]
+    assets=[create_invoice, mock_data], jobs=[daily_refresh_job], schedules=[daily_schedule]
 )

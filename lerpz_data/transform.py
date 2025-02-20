@@ -40,13 +40,11 @@ class TransformBuilder:
         self.data = data
         self.rules = []
 
-    def add_rule(self, rule: TransformFunction) -> TransformBuilder:
-        if not rule._is_transform_function:
-            raise ValueError("The rule must be decorated with @transform.")
+    def add_rule(self, rule: TransformCallable) -> TransformBuilder:
         self.rules.append(rule)
         return self
 
-    def finish(self, func: CollectFunction) -> Transform:
+    def finish(self, func: CollectCallable) -> Transform:
         if not getattr(func, "_is_collect_function"):
             raise ValueError("The rule must be decorated with @collect.")
         return Transform(self.data, self.rules, func)
@@ -62,55 +60,5 @@ class TransformCallable(Protocol):
     def __call__(self, data: TransformData) -> TransformData: ...
 
 
-class TransformFunction:
-    def __init__(self, func: TransformCallable):
-        self._func = func
-        self._is_transform_function = True
-
-    def __call__(self, *args, **kwargs):
-        return self._func(*args, **kwargs)
-
-def transform() -> Callable[[TransformCallable], TransformFunction]:
-    def decorator(func: TransformCallable) -> TransformFunction:
-        if not callable(func):
-            raise ValueError("The decorator must be called with a callable.")
-
-        @wraps(func)
-        def wrapper(data: TransformData):
-            if not isinstance(data, TransformData):
-                raise ValueError("The first argument must be an InvoiceData object.")
-            processed = func(data)
-            processed.collect()
-            return processed
-
-        return TransformFunction(wrapper)
-
-    return decorator
-
 class CollectCallable(Protocol):
     def __call__(self, data: TransformData) -> pl.DataFrame: ...
-
-
-class CollectFunction:
-    def __init__(self, func: CollectCallable):
-        self._func = func
-        self._is_collect_function = True
-
-    def __call__(self, *args, **kwargs):
-        return self._func(*args, **kwargs)
-
-
-def collect() -> Callable[[CollectCallable], CollectFunction]:
-    def decorator(func: CollectCallable) -> CollectFunction:
-        if not callable(func):
-            raise ValueError("The decorator must be called with a callable.")
-
-        @wraps(func)
-        def wrapper(data: TransformData):
-            if not isinstance(data, TransformData):
-                raise ValueError("The first argument must be an InvoiceData object.")
-            return func(data)
-
-        return CollectFunction(wrapper)
-
-    return decorator
