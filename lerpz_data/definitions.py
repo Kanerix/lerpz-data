@@ -52,6 +52,8 @@ def create_invoice(mock_data: TransformData) -> pl.DataFrame:
         .finish(collect_invoice)
     )
 
+    return invoice.data()
+
 
 @transform()
 def calculate_cost(data: TransformData) -> TransformData:
