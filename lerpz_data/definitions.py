@@ -2,7 +2,6 @@ from random import randint
 
 import dagster as dg
 import polars as pl
-from pydantic.type_adapter import R
 
 from lerpz_data.invoice import (
     Invoice,
@@ -84,6 +83,7 @@ daily_refresh_job = dg.define_asset_job("daily_refresh", selection=["create_invo
 daily_schedule = dg.ScheduleDefinition(
     job=daily_refresh_job,
     cron_schedule="0 0 * * *",
+    default_status=dg.DefaultScheduleStatus.RUNNING,
 )
 
 defs = dg.Definitions(
