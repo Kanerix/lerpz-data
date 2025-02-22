@@ -67,7 +67,7 @@ def join_quanitty(data: TransformData) -> TransformData:
     """
     data["items"] = data["items"].join(data["mapping/quantity"], on="item")
     del data["mapping/quantity"]
-    return data
+    return data 
 
 
 def collect_invoice(data: TransformData) -> pl.DataFrame:
@@ -79,11 +79,11 @@ def collect_invoice(data: TransformData) -> pl.DataFrame:
     return data["items"].collect()
 
 
-daily_refresh_job = dg.define_asset_job("daily_refresh", selection=["create_invoice"])
+daily_refresh_job = dg.define_asset_job("daily_refresh", selection=[create_invoice])
 
 daily_schedule = dg.ScheduleDefinition(
     job=daily_refresh_job,
-    cron_schedule="0 0 * * *",
+    cron_schedule="*/2 * * * *",
 )
 
 defs = dg.Definitions(
