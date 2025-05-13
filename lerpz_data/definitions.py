@@ -83,7 +83,7 @@ daily_refresh_job = dg.define_asset_job("daily_refresh", selection=[create_invoi
 daily_schedule = dg.ScheduleDefinition(
     job=daily_refresh_job,
     cron_schedule="*/2 * * * *",
-    default_status=dg.DefaultScheduleStatus.RUNNING,
+    default_status=dg.DefaultScheduleStatus.STOPPED,
 )
 
 defs = dg.Definitions(
